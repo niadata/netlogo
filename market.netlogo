@@ -1,0 +1,94 @@
+globals [
+  min-price
+  population
+  sales-per-tick
+  starting-asking-price
+  starting-willing-to-pay
+  total-sales
+  remaining-supply
+]
+
+breed [ sellers seller ]
+breed [ buyers buyer ]
+
+turtles-own [
+  money
+  next-xcor
+  next-ycor
+]
+
+sellers-own [
+  items-for-sale
+  asking-price
+]
+
+buyers-own [
+  want-to-buy
+  willing-to-pay
+]
+
+to setup
+  clear-all
+  
+  ; set the global variables
+  set min-price 0.01
+  set population 10
+  set total-sales 0
+  set starting-asking-price 100
+  set starting-willing-to-pay 10
+
+  ; create the sellers
+  create-sellers population [
+    set color red
+    set money 0
+    set items-for-sale 50
+    set asking-price starting-asking-price
+    setxy random-xcor random-ycor
+  ]
+
+  ; create the buyers
+  create-buyers population [
+    set color blue
+    set money 1000
+    set want-to-buy 50
+    set willing-to-pay starting-willing-to-pay
+    setxy random-xcor random-ycor
+  ]
+
+  reset-ticks
+end
+
+to go
+  if (sum [items-for-sale] of sellers = 0 or count buyers with [money > 0 and want-to-buy > 0] = 0) [ stop ]
+
+  clear-drawing
+  set sales-per-tick 0
+
+  let offset 1 + ticks mod population
+  foreach (range 0 (population - 1)) [ i ->
+    let the-seller seller i
+    let the-buyer buyer ((i + offset) mod population)
+    ask the-buyer [ do-commerce-with the-seller ]
+  ]
+
+  set total-sales (total-sales + sales-per-tick)
+
+  tick
+end
+
+to do-commerce-with [ the-seller ]
+  ifelse ([items-for-sale] of the-seller > 0 and want-to-buy > 0 and [asking-price] of the-seller <= money and [asking-price] of the-seller <= willing-to-pay) [
+    ; Make the purchase
+    set sales-per-tick (sales-per-tick + 1)
+    set want-to-buy (want-to-buy - 1)
+    let price [asking-price] of the-seller
+    set money (money - price)
+    set money max list 0 money
+    ask the-seller [
+      set items-for-sale (items-for-sale - 1)
+      set money (money + price)
+    ]
+  ] [
+    ; No purchase made
+  ]
+end
