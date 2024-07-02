@@ -1,0 +1,123 @@
+globals [
+  market-price      ; Preço de mercado atual
+  price-history     ; Histórico do preço de mercado
+]
+
+breed [sellers seller]
+breed [buyers buyer]
+
+turtles-own [
+  buyer?
+  seller?
+  dividend          ;d0
+  growth            ;g
+  return            ;r
+  estimated-price   ; preço calculado pela formula
+]
+
+to setup
+  clear-all
+  set market-price 100
+  set price-history []
+  create-turtles 25 [
+    assign-role
+    ;setxy random-xcor 0.5
+    ;setxy random-ycor 0.5
+    initialize-agent
+  ]
+  position-turtles-in-circle
+  reset-ticks
+  setup-plots
+end
+
+to calculate-estimated-price
+  set estimated-price (dividend * (1 + growth)) / (return - growth)
+end
+
+to assign-role
+  let chance random-float 1
+  if chance < 0.5 [
+    set buyer? true
+    set seller? false
+    set color blue
+    set shape "person"
+  ]
+  if chance >= 0.5 and chance < 1[
+    set buyer? false
+    set seller? true
+    set color green
+    set shape "person"
+  ]
+end
+
+ to initialize-agent
+  set dividend ( random-float 5 + 1)     ; D0 entre 1 e 6
+  set growth ( random-float 0.1 + 0.05)  ; g entre 5% e 15%
+  set return ( random-float 1.0 + 0.1 )  ; r entre 10% e 20%
+  set market-price 100
+end
+
+to go ask turtles [
+  if estimated-price > market-price [ set color pink ]
+  if estimated-price < market-price [ set color yellow ]
+  if estimated-price = market-price [ set color blue ]
+
+  if buyer? [
+    ;ações do comprador
+    if estimated-price > market-price [
+        ; Comprar ação
+        set market-price market-price + 1
+        set color pink
+      ]
+  ]
+    if seller? [
+      ;ações do vendedor
+    if estimated-price < market-price [
+        ; Vender ação
+        set market-price market-price - 1
+        set color yellow
+      ]
+    ]
+  if estimated-price = market-price [
+      set color blue
+    ]
+    calculate-estimated-price
+  ]
+  update-market-price
+tick
+end
+
+to position-turtles-in-circle
+  let radius 10
+  let angle 0
+  let angle-step 360 / count turtles
+  ask turtles [
+    setxy (radius * cos angle) (radius * sin angle)
+    set angle angle + angle-step
+  ]
+end
+
+to update-market-price
+   set price-history lput market-price price-history
+  ; Limitar o histórico a 200 ticks
+  if length price-history > 200 [
+    set price-history but-first price-history
+  ]
+  update-plots
+end
+
+to setup-plot
+  set-current-plot "Market Price"
+  set-plot-x-range 0 100
+  set-plot-y-range 0 200
+  clear-all-plots
+end
+
+to update-plot
+  set-current-plot "Market Price"
+  plot market-price
+end
+
+to clear-history
+  set price-history []
+end
