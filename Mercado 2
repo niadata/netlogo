@@ -1,0 +1,128 @@
+globals [
+  market-price      ; Preço de mercado atual
+  price-history     ; Histórico do preço de mercado
+  items-remaining   ; Quantidade de itens restantes para serem vendidos
+]
+
+turtles-own [
+  buyer?
+  seller?
+  dividend          ; d0
+  growth            ; g
+  return            ; r
+  estimated-price   ; preço calculado pela formula
+  budget            ; Orçamento do comprador
+]
+
+
+to setup
+  clear-all
+  set market-price 10
+  set price-history []
+  set items-remaining 1000 ; Definir o número inicial de itens para serem vendidos
+  create-turtles 45 [
+    assign-role
+    setxy random-xcor 0.5
+    setxy random-ycor 0.5
+    initialize-agent
+  ]
+  position-turtles-in-circle
+  reset-ticks
+  setup-plots
+end
+
+ to initialize-agent
+  set dividend ( random-float 5 + 1)    ; D0: entre 1 e 6
+  set growth ( random-float 0.1 + 0.05) ; g: entre 5% a 15%
+  set return ( random-float 1.0 + 0.1 ) ; r: entre 10% a 20%
+  set budget (random 100 + 50)          ; Orçamento inicial entre 50 e 150
+  calculate-estimated-price
+  set market-price 100
+end
+
+to calculate-estimated-price
+  set estimated-price (dividend * (1 + growth)) / (return - growth)
+end
+
+to position-turtles-in-circle
+  let radius 10
+  let angle 0
+  let angle-step 360 / count turtles
+  ask turtles [
+    setxy (radius * cos angle) (radius * sin angle)
+    set angle angle + angle-step
+  ]
+end
+
+to assign-role
+  let chance random-float 1
+  if chance < 0.5 [
+    set buyer? true
+    set seller? false
+    set color red
+    set shape "person"
+  ]
+  if chance >= 0.5 and chance < 1[
+    set buyer? false
+    set seller? true
+    set color green
+    set shape "person"
+  ]
+end
+
+
+to go
+  if items-remaining <= 0 [ stop ] ; Parar se todos os itens forem vendidos
+  ask turtles [
+
+  if buyer? [
+    ;ações do comprador
+    if estimated-price > market-price and budget >= market-price [
+        ; Comprar ação
+        set market-price market-price + 1
+        set budget budget - market-price
+        set color pink
+        set items-remaining items-remaining - 1
+      ]
+  ]
+    if seller? [
+      ;ações do vendedor
+    if estimated-price < market-price [
+        ; Vender ação
+        set market-price market-price - 1
+        set color yellow
+        set items-remaining items-remaining - 1
+      ]
+    ]
+  if not buyer? and not seller? [
+    ;agente não faz nada | Não estou sabendo implementar
+  ]
+  if estimated-price = market-price [
+      set color blue
+    ]
+    calculate-estimated-price
+  ]
+  update-market-price
+tick
+end
+
+to update-market-price
+  set price-history lput market-price price-history
+  ; Limitar o histórico a 100 ticks
+  if length price-history > 100 [
+    set price-history but-first price-history
+  ]
+  update-plots
+end
+
+to setup-plot
+  set-current-plot "Market Price"
+  set-plot-x-range 0 100
+  set-plot-y-range 0 200
+  clear-all-plots
+end
+
+to update-plot
+  set-current-plot "Market Price"
+  plot market-price
+end
