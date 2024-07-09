@@ -1,0 +1,97 @@
+globals[
+  preco-ativo
+  preco-anterior
+  volume-vendas
+  volume-compras
+  pessoas
+]
+
+breed [persons person] ; declarar os agentes
+
+persons-own [
+  tipo
+  compra?
+  vende?
+  volume
+  preco-estimado
+  dividendo         ; d0
+  crescimento       ; g
+  retorno           ; r
+] ; declarar propriedades individuais dos agentes
+
+to setup
+  clear-all
+   set preco-ativo preco-inicial
+   set preco-anterior preco-inicial
+   set volume-compras 0
+   set volume-vendas 0
+   let d preco-ativo * 0.01
+  create-persons populacao; criar o número de agentes
+  ask persons [
+    setxy random-xcor random-ycor
+    set shape "person"
+    ifelse random-float 1 <= 0.1 [set tipo "racional"] [set tipo "aleatorio"]
+  ]
+end
+
+to go [
+  ;inteligencia-zero ; escolher os agentes e suas decisões
+  decisao-racional
+  execute-orders ; executar as ordens dos agentes para calcular recursos do mercado
+  ;tick
+]
+end
+
+ to inicializa-agente
+  set dividendo ( random-float 5 + 1)    ; D0: entre 1 e 6
+  set crescimento ( random-float 0.025 + 0.04) ; g: entre 5% a 15%
+  set retorno ( random-float 0.1 + 0.1 ) ; r: entre 10% a 20%
+  calcula-preco-estimado
+end
+
+to calcula-preco-estimado
+  set preco-estimado (dividendo * (1 + crescimento)) / (retorno - crescimento)
+end
+
+to inteligencia-zero
+  ; escolha dos agentes para negociação
+  ask n-of num-traders persons with [ tipo = "aleatorio"] [
+    ifelse random-float 1 <= 0.5 [set pessoas "C-IZ" ] [set pessoas "V-IZ"] ; alguns deles podem decidir realmente intervir
+]
+end
+
+to decisao-irracional
+ask n-of num-traders persons with [ tipo = "racional"] [
+    ifelse random-float 1 <= 0.5 [set pessoas "C-racional" inicializa-agente ] [set pessoas "V-racional"] ; alguns deles podem decidir realmente intervir
+]
+end
+
+to sorteia-agente
+
+  let tipo-agente random-float 4
+  if tipo-agente = 0 [
+    set pessoas "C-racional"
+    set compra? true
+    set vende? false
+    set color blue
+  ]
+  if tipo-agente = 1 [
+    set pessoas "V-racional"
+    set compra? false
+    set vende? true
+    set color blue
+  ]
+  if tipo-agente = 2 [
+    set pessoas "C-IZ"
+    set compra? true
+    set vende? false
+    set color blue
+  ]
+  if tipo-agente = 3 [
+    set pessoas "V-IZ"
+    set compra? false
+    set vende? true
+    set color blue
+  ]
+
+end
